@@ -1138,6 +1138,30 @@ func (dmp *DiffMatchPatch) DiffPrettyHtml(diffs []Diff) string {
 	return buff.String()
 }
 
+func escapeWhitespace(input string) string {
+	// Define a map of whitespace characters and their escaped versions
+	escapeMap := map[string]string{
+		"\n": "\\n",
+		"\t": "\\t",
+		"\r": "\\r",
+		" ":  "\\s",
+	}
+
+	// Use a regular expression to match all whitespace characters
+	re := regexp.MustCompile(`\s`)
+
+	// Replace each whitespace character using the escapeMap
+	result := re.ReplaceAllStringFunc(input, func(match string) string {
+		escaped, exists := escapeMap[match]
+		if !exists {
+			escaped = fmt.Sprintf("\\x%x", match[0]) // Default escape for unknown whitespace
+		}
+		return escaped
+	})
+
+	return result
+}
+
 // DiffPrettyText converts a []Diff into a colored text report.
 func (dmp *DiffMatchPatch) DiffPrettyText(diffs []Diff) string {
 	var buff bytes.Buffer
@@ -1146,10 +1170,12 @@ func (dmp *DiffMatchPatch) DiffPrettyText(diffs []Diff) string {
 
 		switch diff.Type {
 		case DiffInsert:
+			text = escapeWhitespace(text)
 			_, _ = buff.WriteString("\x1b[32m")
 			_, _ = buff.WriteString(text)
 			_, _ = buff.WriteString("\x1b[0m")
 		case DiffDelete:
+			text = escapeWhitespace(text)
 			_, _ = buff.WriteString("\x1b[31m")
 			_, _ = buff.WriteString(text)
 			_, _ = buff.WriteString("\x1b[0m")
